@@ -46,7 +46,7 @@ id = "0xlgtm"                                  # Your id / username / handle
 bio = "optimizoor | whitehattoor"        # Your bio
 avatar = "img/avatar.webp"               # Your avatar
 links = [
-    { name = "Twitter", icon = "twitter", url = "https://twitter.com/<your-username>" },
+    { name = "Twitter", icon = "twitter", url = "https://twitter.com/0xlgtm" },
 ]
 
 homepage_layout = "about"             # "about" | "list"
