@@ -1,7 +1,7 @@
 +++
-title = "first"
+title = "draft"
 date = 2022-01-01
-draft = false
+draft = true
 
 [taxonomies]
 categories = ["one"]
