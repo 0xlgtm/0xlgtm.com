@@ -1,0 +1,7 @@
+[[project]]
+name = "a sample project"
+desc = "sample project's description"
+tags = ["example"]
+links = [
+  { name = "github", url = "github.com" },
+]
