@@ -7,10 +7,10 @@ lang = 'en'
 
 Hi there 🖐️
 
-My name is Simon but some of you may know me better as 0xlgtm.
+My name is Simon but some of you may recognize me as 0xlgtm.
 
-I specialize in assembly optimization and security research.
+I spend the majority of time tinkering with assembly and writing about my experiments and insights. Occasionally, I also do some smart contract audits and CTFs.
 
-You can read about my insights and discoveries on my [blog](./blog).
+You can read my articles at my [blog](./blog).
 
 I am also actively looking for new and interesting opportunities. Feel free to reach out on twitter if you are interested in engaging my services.

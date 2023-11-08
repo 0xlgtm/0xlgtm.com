@@ -43,7 +43,7 @@ anchors = "on"
 
 name = "0xlgtm"                          # Your name
 id = "0xlgtm"                                  # Your id / username / handle
-bio = "optimizoor | whitehattoor"        # Your bio
+bio = "optimizooor | whitehattooor"        # Your bio
 avatar = "img/avatar.webp"               # Your avatar
 links = [
     { name = "Twitter", icon = "twitter", url = "https://twitter.com/0xlgtm" },
