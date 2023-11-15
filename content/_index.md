@@ -9,7 +9,7 @@ Hi there 🖐️
 
 My name is Simon but some of you may recognize me as 0xlgtm.
 
-I spend the majority of time tinkering with assembly and writing about my experiments and insights. Occasionally, I also do some smart contract audits and CTFs.
+I spend the majority of time tinkering with assembly and writing about my experiments and insights. Occasionally, I also participate in bug bounties, smart contract audits and CTFs.
 
 You can read my articles at my [blog](./blog).
 
