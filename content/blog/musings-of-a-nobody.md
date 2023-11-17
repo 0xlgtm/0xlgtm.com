@@ -23,7 +23,7 @@ truncate_summary = true
 A collection of lessons that I've learnt (mostly the hard way lol) ever since I left my full time job with Kyber. In no particular order:
 
 # Money
-- The value of money is dependent on how much money you have. The more you have, the lesser it's worth.
+- The value of money is highly correlated on how much money you have. The more you have, the lesser it's worth.
 - You are already a billionaire, a time billionaire.
 
 # Health
