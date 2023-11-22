@@ -9,8 +9,10 @@ Hi there 🖐️
 
 My name is Simon but some of you may recognize me as 0xlgtm.
 
-I spend the majority of time tinkering with assembly and writing about my experiments and insights. Occasionally, I also participate in bug bounties, smart contract audits and CTFs.
+Most of the time, you can find me trying to poke holes at vulnerable protocols.
 
-You can read my articles at my [blog](./blog).
+But when I'm not doing that, I enjoy [writing](https://0xlgtm.com/blog/) and sharing about my learnings and helping others.
 
-I am also actively looking for new and interesting opportunities. Feel free to reach out on twitter if you are interested in engaging my services.
+I am also actively looking for new and interesting opportunities.
+
+Feel free to reach out on [twitter](https://twitter.com/0xlgtm) if you are interested in engaging my services.
