@@ -1,7 +1,7 @@
 [[project]]
-name = "Gas Optimization Handbook"
-desc = "In-depth explanations of commonly used optimization strategies."
-tags = ["gas optimization"]
+name = "example project"
+desc = "example description"
+tags = ["example tag"]
 links = [
-  { name = "github", url = "https://github.com/0xlgtm/gas-optimization-handbook" },
+  { name = "github", url = "https://github.com/0xlgtm/example" },
 ]
