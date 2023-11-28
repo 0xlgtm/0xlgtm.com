@@ -1,7 +1,7 @@
 [[project]]
 name = "EVM notes"
 desc = "Useful resources that helped me to unravel the mysteries of the EVM."
-tags = ["evm", assembly]
+tags = ["evm", "assembly"]
 links = [
   { name = "github", url = "https://github.com/0xlgtm/evm-notes" },
 ]
