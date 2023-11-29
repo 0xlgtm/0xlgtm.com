@@ -1,5 +1,5 @@
 +++
-title = "Musings of a nobody"
+title = "Musings of a millennial"
 date = 2020-02-02
 draft = false
 
@@ -32,46 +32,50 @@ A collection of lessons that I've learnt (mostly the hard way lol) ever since I 
 
 # Happiness
 - Pursue contentment over fleeting emotions like happiness.
-- Jealous is the root of all evil. Social media is a highlight reel of life's happiness.
+- Jealousy is the root of all evil.
+- Social media is a highlight of the best things in life.
 
 # Life
-- Nobody is going to remember you except your kids.
-- Life is all about making compromises.
-- Celebrate your victories, no matter how small, and be kind to yourself.
-- Avoid over-optimizing time; not everything is an opportunity cost.
+- Life is about making compromises.
 - Embrace curiosity-driven living.
-- Never forget those that helped you to get to where you are today and pay it forward.
-- Few deep relationships are more valuable than many superficial ones.
-- We can all agree to disagree.
-- "Common sense" is different for different people.
-- Listen to your life instead of conforming to societal expectations.
+- A few deep relationships are more valuable than many superficial ones.
 - Life is full of ups and downs. Having experienced "down" is the only way to truly appreciate "up".
 
 # Death
-- You may very well die tomorrow so live in the present and don't plan too far ahead into the future.
+- You might die tomorrow so live in the present and don't plan too far ahead into the future.
+
+# Kindness
+- Celebrate your victories, no matter how small, and be kind to yourself.
+- Never forget those that helped you to get to where you are today and pay it forward.
+
+# Disagreement
+- We can all agree to disagree.
+- "Common sense" is different for everyone.
 
 # Choice
 - Prioritize experiences over money.
-- Self-help is like a drug, don't be addicted to it.
+- Self-help is like a drug so don't be addicted to it.
 - Less is more. Focus.
 - Control what you can; ignore the rest.
-- Legacy is overrated.
+- Do what is right when no one is looking.
+
+# Legacy
 - Innovation is for geniuses and losers.
-- Don't waste your time doing things that won't help you to achieve your goal.
+- Nobody is going to remember you except your kids.
+
+# Quarter life crisis
 - If you don't have a goal in life, consider choosing a way of life that you know you will enjoy.
 - You don't know what you don't know so the only way to know is to try.
 - If you've tried 10 different things and you still don't know what to do, it is your responsibility to find the 11th thing.
-- Instead of trying to find something you like to do, focus on avoiding something you hate / cannot compromise on.
-- Be the main character in your life.
-- It's okay to float around if you're not sure of what to do. But you'll need to make a choice eventually and be patient with progress.
-- Do what is right when no one is looking.
+- It's okay to float around if you're not sure of what to do but you need to make a choice eventually and be patient with progress.
 - If you don't ask, the answer is always no.
-- If you don't try, you'll regret it in the future.
+- If you don't try, you will regret it in the future.
 - There are only a few things in life that are truly irreversible.
-- Live with the consequences of your action.
+- You have to live with the consequences of your action.
+- Listen to what your life is telling you instead of conforming to societal expectations.
 
 # Luck
-- Hard work is often mistaken for luck.
+- Hard work is often mistaken for as luck.
 
 # Extras
 
