@@ -1,7 +1,7 @@
 +++
 title = "Musings of a millennial"
 date = 2020-02-02
-draft = false
+draft = true
 
 [taxonomies]
 categories = ["life"]
