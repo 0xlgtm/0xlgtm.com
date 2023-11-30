@@ -4,8 +4,8 @@ date = 2023-10-02
 draft = false
 
 [taxonomies]
-categories = ["gas optimization"]
-tags = ["solidity", "assembly", "opcodes"]
+categories = ["solidity"]
+tags = ["gas optimization"]
 
 [extra]
 lang = "en"
