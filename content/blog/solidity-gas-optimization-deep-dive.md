@@ -24,7 +24,7 @@ Before we begin, let's talk about the elephant in the room — why write another
 
 My main criticism of many of these articles is their preference for breadth over depth i.e. they do not adequately delve into the technical details behind the optimizations discussed. As such, my article will focus only on a few but highly impactful gas saving strategies. A comprehensive breakdown of each technique will also be provided, allowing the reader to appreciate and understand how these tricks work.
 
-We will begin by covering the foundational knowledge necessary to understand the concepts outlined later in this article. Once we've laid a solid groundwork, we'll delve into several optimizations, examining how these techniques work and some considerations to be mindful of when applying these techniques.
+We will begin by covering the foundational knowledge necessary to understand the concepts outlined later in this article. Once we've laid a solid groundwork, we will delve into several optimizations, examining how these techniques work and some considerations to be mindful of when applying these techniques.
 
 # Prerequisite Knowledge
 
