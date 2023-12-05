@@ -27,6 +27,41 @@ My main criticism of many of these articles is their preference for breadth over
 We will begin by covering the foundational knowledge necessary to understand the concepts outlined later in this article. Once we've laid a solid groundwork, we'll delve into several optimizations, examining how these techniques work and some considerations to be mindful of when applying these techniques.
 
 
+# Prerequisite Knowledge
+
+{% tip(header="Tip") %}
+If you understand the SSTORE and SLOAD opcodes and their dynamic cost structure, you can skip ahead to the next section.
+{% end %}
+
+Assume that you want to deploy the following contract:
+
+```solidity
+// SPDX-License-Identifier: GPL-3.0
+// Source: https://remix.ethereum.org/
+pragma solidity >=0.8.2 <0.9.0;
+
+contract Storage {
+
+    uint256 number;
+
+    function store(uint256 num) public {
+        number = num;
+    }
+
+    function retrieve() public view returns (uint256){
+        return number;
+    }
+}
+```
+
+Compiling the Storage contract will result in the following [runtime](https://ethereum.stackexchange.com/questions/32234/difference-between-bytecode-and-runtime-bytecode) bytecode:
+
+`6080604052348015600e575f80fd5b50600436106030575f3560e01c80632e64cec11460345780636057361d146048575b5f80fd5b5f5460405190815260200160405180910390f35b605760533660046059565b5f55565b005b5f602082840312156068575f80fd5b503591905056fea264697066735822122078bcdcb3640a135d107fd506fad0323eea506128357e97975d901550f030118e64736f6c63430008140033`
+
+To the untrained eye, this paragraph might appear nonsensical; however, it contains the code for the aforementioned contract. Each pair of hexadecimal characters constitutes one byte, and each byte corresponds to an operation code, or opcode for short.
+
+Opcodes are the basic instructions executed by the Ethereum Virtual Machine (EVM). Each opcode has an associated gas cost. To get the most "bang for buck" gas optimizations, we will focus on minimizing the most expensive opcodes which are the `SSTORE` and `SLOAD` opcodes.
+
 
 ## Storage Packing
 
