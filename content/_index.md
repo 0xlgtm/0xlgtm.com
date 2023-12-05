@@ -7,8 +7,8 @@ lang = 'en'
 
 Hi there 🖐️
 
-My name is Simon but some of you may recognize me as 0xlgtm.
+My name is Simon.
 
-Most of the time, you can find me trying to poke holes at vulnerable protocols. I also enjoy [writing](https://0xlgtm.com/blog/), sharing my learnings and helping others.
+I learn, I write and I (will soon) build.
 
-I am actively looking for new and interesting opportunities. Feel free to reach out on [twitter](https://twitter.com/0xlgtm) if you are interested in engaging my services.
+Reach out on twitter if you want to contact me.
