@@ -1,7 +1,7 @@
 +++
 title = "A case study on gas optimization design ft. SSTORE"
 date = 2023-10-02
-draft = false
+draft = true
 
 [taxonomies]
 categories = ["solidity"]

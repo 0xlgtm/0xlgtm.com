@@ -1,7 +1,7 @@
 +++
 title = "Deconstructing the SLOAD opcode"
 date = 2023-09-20
-draft = false
+draft = true
 
 [taxonomies]
 categories = ["solidity"]
