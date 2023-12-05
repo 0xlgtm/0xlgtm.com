@@ -29,7 +29,7 @@ We will begin by covering the foundational knowledge necessary to understand the
 # Prerequisite Knowledge
 
 {% tip(header="Tip") %}
-If you understand the SSTORE and SLOAD opcodes and their dynamic cost structure, you can skip ahead to the next section.
+If you understand the SSTORE and SLOAD opcodes and their dynamic pricing algorithm, you can skip ahead to the next section.
 {% end %}
 
 Assume that you want to deploy the following contract:
