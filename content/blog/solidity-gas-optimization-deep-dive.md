@@ -63,7 +63,7 @@ Opcodes are the basic instructions executed by the Ethereum Virtual Machine (EVM
 
 ## SLOAD 101
 
-Given the index of a specific slot in a contract's storage, the `SLOAD` opcode is used to retrieve the 256-bit word located at that index. Unlike other opcodes with a fixed gas price, the `SLOAD` opcode has a dynamic pricing as follows:
+Given the index of a specific slot in a contract's storage, the `SLOAD` opcode is used to retrieve the 256-bit word located at that index. For example, the ERC20 `balanceOf()` function executes one `SLOAD` operation to retrieve a user's balance. Unlike other opcodes with a fixed gas price, the `SLOAD` opcode has a dynamic pricing as follows:
 
 - 2,100 gas for a cold access
 - 100 gas for a warm access
