@@ -109,6 +109,25 @@ The difference in gas costs cannot be exactly 100 because there are other operat
 
 Generating the gas report for the two `getX()` function reveals a gas cost of 2246 and 2353 respectively. As expected, the `getX()` function of the `ColdAndWarmAccess` contract costs 107 gas more. Now that you understand how the `SLOAD` opcode works, we can proceed to untangle the intricacies of the most expensive and complex opcode, the `SSTORE` opcode.
 
+## SSTORE 101
+
+`SSTORE` is the opcode used to modify a blockchain state. Whenever a function wants to update the contract's storage, an `SSTORE` opcode is executed. For example, the `transfer()` function in ERC20 executes two `SSTORE` operations to update the balances of both the sender and the recipient. Determining the gas cost of `SSTORE` involves a complex [algorithm](https://github.com/wolflo/evm-opcodes/blob/main/gas.md#a7-sstore) so instead, here's a summary of the key points:
+
+1) An `SSTORE` operation is always preceeded by an `SLOAD` because you need to access a slot when you write to it. This implies that we must add the gas costs from the `SLOAD` operation on top of the cost of `SSTORE`.
+2) A storage update from zero to non-zero costs 20k gas.
+3) A storage update from non-zero to a different non-zero costs 2.9k gas.
+4) A storage update from non-zero to the same non-zero costs 100 gas.
+5) A storage update from non-zero to zero costs 2.9k gas but will also refund the user with some gas*.
+6) If the slot has been modified previously in the same transaction i.e. a dirty write, all subsequent `SSTORE` to the same slot will only cost 100 gas.
+
+<sub>*The amount of gas refunded depends on a few factors but we will refrain from exploring these factors as they do not important to the optimizations outlined later in this article.</sub>
+
+As you can see, the first write to storage (aka clean write) is prohibitively expensive. The costs for executing `SSTORE` dwarfs the cost of almost every other opcodes. This also provides us with a simple but effective technique for reducing gas costs — reduce the number of `SSTORE` where possible.
+
+Let's walk through a simple contract to illustrate the gas costs described above.
+
+
+
 ## Storage Packing
 
 talk about sstore and sload, warm vs cold access, dirty vs clean writes.
