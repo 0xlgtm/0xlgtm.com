@@ -65,16 +65,16 @@ Opcodes are the basic instructions executed by the Ethereum Virtual Machine (EVM
 
 ## SLOAD 101
 
-Given the index of a specific slot in a contract's storage, the `SLOAD` opcode is used to retrieve the 256-bit word located at that index. For example, the ERC20 `balanceOf()` function executes one `SLOAD` operation to retrieve a user's balance. Unlike other opcodes with a fixed gas price, the `SLOAD` opcode has a dynamic pricing as follows:
+Given the index of a specific slot in a contract's storage, the `SLOAD` opcode is used to retrieve the 256-bit (32 bytes) word located at that index. For example, the ERC20 `balanceOf()` function executes one `SLOAD` operation to retrieve a user's balance. Unlike other opcodes with a fixed gas price, the `SLOAD` opcode has a dynamic pricing model as follows:
 
 - 2,100 gas for a cold access
 - 100 gas for a warm access
 
-Notably, a cold `SLOAD` is 20 times more costly than a warm `SLOAD`. To leverage on this difference, we must first understand the distinction between a cold and a warm access.
+Notably, a cold `SLOAD` is 20 times more costly than a warm `SLOAD`. To take advantage of this fact, we must first understand the distinction between a cold and a warm access.
 
 ### Cold vs. Warm Access
 
-Before a transaction execution begins, an empty set called the `accessed_storage_keys` is initialized. Whenever a storage slot of a contract is accessed, the `(address, storage_key)` pair is first check against the `accessed_storage_keys` set. If it is not already present in the set, it is classified as a cold access. Conversely, if it is already part of the set, it is categorized as a warm access.
+Before a transaction execution begins, an empty set called the `accessed_storage_keys` is initialized. Whenever a storage slot of a contract is accessed, the `(address, storage_key)` pair is first check against the `accessed_storage_keys` set. If it is present in the set, it is classified as a warm access. Conversely, if it is not present, it is categorized as a cold access.
 
 Let's demonstrate this with [two simple contract](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/ColdVsWarm.sol).
 
@@ -101,15 +101,13 @@ contract ColdAndWarmAccess {
 }
 ```
 
-Both contracts are very similar except the `getX()` function in the `ColdAndWarmAccess` contract makes two `SLOAD` calls to storage slot 0. Therefore, the gas costs between the two `getX()` functions should differ by at least 100 gas.
+The code snippet above contains two similar contracts, namely `ColdAccess` and `ColdAndWarmAccess`. The main difference lies in the `getX()` function of the `ColdAndWarmAccess` contract, which executes two `SLOAD` calls to storage slot 0. Therefore, the gas costs between the two `getX()` functions should differ by a minimum of 100 gas.
 
 {% tip(header="Tip") %}
-The difference in gas costs cannot be exactly 100 because there may be some miscellaneous operations required to rearrange the stack. This is dependent on the compiler version and whether or not optimizations are turned on.
+The difference in gas costs cannot be exactly 100 because there are other operations required e.g. the temporary assignment of x to the memory variable a.
 {% end %}
 
-Generating the gas report for the two `getX()` function reveals a gas cost of 2246 and 2353 respectively. As expected, the `ColdAndWarmAccess:getX()` function costs 107 gas more. Now that you have a good understanding of how the `SLOAD` opcode works, we can now proceed to untangle the intricacies of the most expensive and complex opcode, the `SSTORE` opcode.
-
-
+Generating the gas report for the two `getX()` function reveals a gas cost of 2246 and 2353 respectively. As expected, the `getX()` function of the `ColdAndWarmAccess` contract costs 107 gas more. Now that you understand how the `SLOAD` opcode works, we can proceed to untangle the intricacies of the most expensive and complex opcode, the `SSTORE` opcode.
 
 ## Storage Packing
 
