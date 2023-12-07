@@ -22,9 +22,9 @@ truncate_summary = true
 
 Before we begin, let's talk about the elephant in the room — why write another gas optimization article when there are already [so](https://www.rareskills.io/post/gas-optimization) [many](https://www.alchemy.com/overviews/solidity-gas-optimization) [resources](https://coinsbench.com/comprehensive-guide-tips-and-tricks-for-gas-optimization-in-solidity-5380db734404) [out](https://betterprogramming.pub/solidity-gas-optimizations-and-tricks-2bcee0f9f1f2) [there](https://0xmacro.com/blog/solidity-gas-optimizations-cheat-sheet/)?
 
-My main criticism of many of these articles is their preference for breadth over depth i.e. they do not adequately delve into the technical details behind the optimizations discussed. As such, my article will focus only on a few but highly impactful gas saving strategies. A comprehensive breakdown of each technique will also be provided to ensure that the reader fully understands how these tricks work.
+My main criticism of some of these articles is their preference for breadth over depth i.e. they do not adequately delve into the technical details behind the optimizations discussed. As such, my article will only focus on a few but highly impactful gas saving strategies. A comprehensive breakdown of each technique will also be provided to ensure that the reader fully understands how these tricks work.
 
-We will begin by covering the foundational knowledge necessary to grasp the concepts outlined later in this article. Once we have laid a solid groundwork, we will delve into several optimizations, examining how these techniques work and some considerations to be mindful of when applying these strategies..
+We will begin by covering the foundational knowledge necessary to grasp the concepts that will be outlined later in this article. Once we have laid a solid groundwork, we will delve into several optimizations, examining how these techniques work and some considerations to be mindful of when applying these strategies..
 
 # Prerequisite Knowledge
 
