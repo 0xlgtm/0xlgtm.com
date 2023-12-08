@@ -104,7 +104,7 @@ contract ColdAndWarmAccess {
 The code snippet above contains two similar contracts, namely `ColdAccess` and `ColdAndWarmAccess`. The main difference lies in the `getX()` function of the `ColdAndWarmAccess` contract, which executes two `SLOAD` calls to storage slot 0. Therefore, the gas costs between the two `getX()` functions should differ by a minimum of 100 gas.
 
 {% tip(header="Tip") %}
-The difference in gas costs cannot be exactly 100 because there are other operations required e.g. the temporary assignment of x to the memory variable a.
+The difference in gas costs cannot be exactly 100 as additional operations are required, such as overflow checks.
 {% end %}
 
 Generating the gas report for the two `getX()` function reveals a gas cost of 2246 and 2353 respectively. As expected, the `getX()` function of the `ColdAndWarmAccess` contract costs 107 gas more. Now that you understand how the `SLOAD` opcode works, we can proceed to untangle the intricacies of the most expensive and complex opcode, the `SSTORE` opcode.
