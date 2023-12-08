@@ -117,14 +117,14 @@ Generating the gas report for the two `getX()` function reveals a gas cost of 22
 2) A storage update from zero to non-zero costs 20k gas.
 3) A storage update from non-zero to a different non-zero costs 2.9k gas.
 4) A storage update from non-zero to the same non-zero costs 100 gas.
-5) A storage update from non-zero to zero costs 2.9k gas but will also refund the user with some gas*.
-6) If the slot has been modified previously in the same transaction i.e. a dirty write, all subsequent `SSTORE` to the same slot will only cost 100 gas.
+5) If the slot has been modified previously in the same transaction i.e. a dirty write, all subsequent `SSTORE` to the same slot will only cost 100 gas.
+6) A storage update from non-zero to zero will also refund the user with some gas*.
 
-<sub>*The amount of gas refunded depends on a few factors but we will refrain from exploring these factors as they do not important to the optimizations outlined later in this article.</sub>
+<sub>*The gas refund amount depends on a few factors, which we will address in a separate article.</sub>
 
-As you can see, the first write to storage (aka clean write) is prohibitively expensive. The costs for executing `SSTORE` dwarfs the cost of almost every other opcodes. This also provides us with a simple but effective technique for reducing gas costs — reduce the number of `SSTORE` where possible.
+From the summary above, it is evident that the very first update to storage, also known as a clean write, is prohibitively expensive. The cost for executing `SSTORE` far surpasses the costs associated with almost every other opcode. This insight suggests a potential optimization: how can we minimize the use of `SSTORE`s?
 
-Let's walk through a simple contract to illustrate the gas costs described above.
+Let's walk through another contract to illustrate the gas costs described above.
 
 
 
