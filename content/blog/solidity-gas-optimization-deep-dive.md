@@ -22,16 +22,16 @@ truncate_summary = true
 
 Before we begin, let's talk about the elephant in the room — why write another gas optimization article when there are already [so](https://www.rareskills.io/post/gas-optimization) [many](https://www.alchemy.com/overviews/solidity-gas-optimization) [resources](https://coinsbench.com/comprehensive-guide-tips-and-tricks-for-gas-optimization-in-solidity-5380db734404) [out](https://betterprogramming.pub/solidity-gas-optimizations-and-tricks-2bcee0f9f1f2) [there](https://0xmacro.com/blog/solidity-gas-optimizations-cheat-sheet/)?
 
-My main criticism of these articles lies in their inclination towards breadth rather than depth. Specifically, they fall short in adequately explaining the technical details behind the optimizations discussed. Consequently, readers often resort to memorization rather than acquiring the ability to discern potential optimization opportunities.
-
-Furthermore, some of these techniques may be compiler-version-dependent and typically yield minimal gas savings. Therefore, it is logical to prioritize the most impactful optimizations and gain a thorough understanding of how and why they work.
+My main criticism of these articles lies in their inclination towards breadth rather than depth. Specifically, they fall short in adequately explaining the technical details behind the optimizations discussed. Consequently, readers often resort to memorization and pattern matching instead of learning how to discern potential optimization opportunities. In this article, we aim to address this gap by thoroughly exploring the most impactful optimizations, unraveling their intricacies to understand how and why they work.
 
 We will begin by covering the foundational knowledge necessary to grasp the techniques outlined later in this article. These techniques share a common underlying concept, making a solid groundwork crucial for a better understanding and appreciation of these strategies. Additionally, we will briefly touch upon some considerations to keep in mind when applying these optimizations.
 
 # Prerequisite Knowledge
 
+## Understanding Opcodes
+
 {% tip(header="Tip") %}
-If you understand the SSTORE and SLOAD opcodes and their dynamic pricing algorithm, you can skip ahead to the next section.
+If you understand the SSTORE and SLOAD opcodes and their dynamic pricing algorithm, you can skip to the [optimization](#optimizations) section.
 {% end %}
 
 Assume that you want to deploy the following contract:
@@ -59,20 +59,22 @@ Compiling the `Storage` contract will result in the following [runtime](https://
 
 `6080604052348015600e575f80fd5b50600436106030575f3560e01c80632e64cec11460345780636057361d146048575b5f80fd5b5f5460405190815260200160405180910390f35b605760533660046059565b5f55565b005b5f602082840312156068575f80fd5b503591905056fea264697066735822122078bcdcb3640a135d107fd506fad0323eea506128357e97975d901550f030118e64736f6c63430008140033`
 
-To the untrained eye, this paragraph might appear nonsensical. However, it contains the code for the aforementioned contract. Each pair of hexadecimal characters constitutes one byte, and each byte corresponds to an operation code, or opcode for short. For example, `60` stands for the `PUSH1` opcode and `80` is the input for `PUSH1`.
+To the untrained eye, this paragraph might appear nonsensical. However, it contains the code for the `Storage` contract. Each pair of hexadecimal characters constitutes one byte, and each byte corresponds to an operation code, or opcode for short. For example, `60` stands for the `PUSH1` opcode and `80` is the input for `PUSH1`.
 
 Opcodes are the basic instructions executed by the Ethereum Virtual Machine (EVM) and each opcode has a gas cost associated with it. In this article, we will focus on strategies that minimizes the use of two of the most expensive opcodes, namely `SSTORE` and `SLOAD`.
 
-## SLOAD 101
+## Deconstructing SLOAD
 
-Given the index of a specific slot in a contract's storage, the `SLOAD` opcode is used to retrieve the 256-bit (32 bytes) word located at that index. For example, the ERC20 `balanceOf()` function executes one `SLOAD` operation to retrieve a user's balance. Unlike other opcodes with a fixed gas price, the `SLOAD` opcode has a dynamic pricing model as follows:
+### What is the SLOAD opcode?
+
+Given the index to some position in a contract's storage, the `SLOAD` opcode is used to retrieve the 256-bit (32 bytes) word located at that slot. For example, the ERC20 `balanceOf()` function executes one `SLOAD` operation to retrieve a user's balance. Unlike other opcodes with a fixed gas price, the `SLOAD` opcode has a (simple) dynamic pricing model as follows:
 
 - 2,100 gas for a cold access
 - 100 gas for a warm access
 
-Notably, a cold `SLOAD` is 20 times more costly than a warm `SLOAD`. To take advantage of this fact, we must first understand the distinction between a cold and a warm access.
+Notably, a cold `SLOAD` is 20 times more costly than a warm `SLOAD`. To take advantage of this, we must first understand the distinction between a cold and a warm access.
 
-### Cold vs. Warm Access
+### Cold Access vs. Warm Access
 
 Before a transaction execution begins, an empty set called the `accessed_storage_keys` is initialized. Whenever a storage slot of a contract is accessed, the `(address, storage_key)` pair is first check against the `accessed_storage_keys` set. If it is present in the set, it is classified as a warm access. Conversely, if it is not present, it is categorized as a cold access.
 
@@ -107,7 +109,7 @@ The code snippet above contains two similar contracts, namely `ColdAccess` and `
 The difference in gas costs cannot be exactly 100 as additional operations are required, such as overflow checks.
 {% end %}
 
-Generating the gas report for the two `getX()` function reveals a gas cost of 2246 and 2353 respectively. As expected, the `getX()` function of the `ColdAndWarmAccess` contract costs 107 gas more. Now that you understand how the `SLOAD` opcode works, we can proceed to untangle the intricacies of the most expensive and complex opcode, the `SSTORE` opcode.
+We can use the command `forge test --match-contract ColdVsWarmTest --gas-report` to generate the gas report for the two `getX()` function, which reveals a gas cost of 2246 and 2353 respectively. As expected, the `getX()` function of the `ColdAndWarmAccess` contract costs 107 gas more. Now that you understand how the `SLOAD` opcode works, we can proceed to untangle the most expensive and complex opcode, the `SSTORE` opcode.
 
 ## SSTORE 101
 
