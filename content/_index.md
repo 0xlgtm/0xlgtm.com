@@ -5,10 +5,8 @@ template = 'home.html'
 lang = 'en'
 +++
 
-Hi there 🖐️
+Hi, my name is Simon.
 
-My name is Simon.
+I am a research engineer, with an interest in web3 security and assembly optimization.
 
-I learn, I write and I (will soon) build.
-
-Reach out on twitter if you want to contact me.
+Feel free to connect with me on Twitter.
