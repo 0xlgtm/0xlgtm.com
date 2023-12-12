@@ -78,7 +78,7 @@ Notably, a cold `SLOAD` is 20 times more costly than a warm `SLOAD`. To take adv
 
 Before a transaction execution begins, an empty set called the `accessed_storage_keys` is initialized. Whenever a storage slot of a contract is accessed, the `(address, storage_key)` pair is first check against the `accessed_storage_keys` set. If it is present in the set, it is classified as a warm access. Conversely, if it is not present, it is categorized as a cold access.
 
-Let's demonstrate this with [two simple contract](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/ColdVsWarm.sol).
+Let's demonstrate these two types of access with [some examples](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/ColdVsWarm.sol).
 
 ```solidity
 // Compiler version 0.8.22, optimizer on with 10000 runs
@@ -103,13 +103,13 @@ contract ColdAndWarmAccess {
 }
 ```
 
-The code snippet above contains two similar contracts, namely `ColdAccess` and `ColdAndWarmAccess`. The main difference lies in the `getX()` function of the `ColdAndWarmAccess` contract, which executes two `SLOAD` calls to storage slot 0. Therefore, the gas costs between the two `getX()` functions should differ by a minimum of 100 gas.
+The code snippet above contains two contracts, namely `ColdAccess` and `ColdAndWarmAccess`. The main difference lies in the `getX()` function of the `ColdAndWarmAccess` contract, which executes two `SLOAD` calls to storage slot 0. The first `SLOAD` is considered a cold access and thus costs 2,100 gas. The second `SLOAD` is a warm access and costs 100 gas therefore, the difference in gas costs between the two `getX()` functions should be at least 100 gas.
 
 {% tip(header="Tip") %}
-The difference in gas costs cannot be exactly 100 as additional operations are required, such as overflow checks.
+The difference cannot be exactly 100 gas as additional operations are required e.g. stack management.
 {% end %}
 
-We can use the command `forge test --match-contract ColdVsWarmTest --gas-report` to generate the gas report for the two `getX()` function, which reveals a gas cost of 2246 and 2353 respectively. As expected, the `getX()` function of the `ColdAndWarmAccess` contract costs 107 gas more. Now that you understand how the `SLOAD` opcode works, we can proceed to untangle the most expensive and complex opcode, the `SSTORE` opcode.
+We can generate the gas report using forge tests i.e. `forge test --match-contract ColdVsWarmTest --gas-report`. Executing this command reveals a gas cost of 2,246 and 2,353 respectively. As expected, the `getX()` function of the `ColdAndWarmAccess` contract costs 107 gas more. Now that you understand how the `SLOAD` opcode works, we can proceed to untangle the most expensive and complex opcode, the `SSTORE` opcode.
 
 ## SSTORE 101
 
