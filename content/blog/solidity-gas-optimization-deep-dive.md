@@ -111,24 +111,81 @@ The difference cannot be exactly 100 gas as additional operations are required e
 
 We can generate the gas report using forge tests i.e. `forge test --match-contract ColdVsWarmTest --gas-report`. Executing this command reveals a gas cost of 2,246 and 2,353 respectively. As expected, the `getX()` function of the `ColdAndWarmAccess` contract costs 107 gas more. Now that you understand how the `SLOAD` opcode works, we can proceed to untangle the most expensive and complex opcode, the `SSTORE` opcode.
 
-## SSTORE 101
+## Deciphering SSTORE
 
-`SSTORE` is the opcode used to modify a blockchain state. Whenever a function wants to update the contract's storage, an `SSTORE` opcode is executed. For example, the `transfer()` function in ERC20 executes two `SSTORE` operations to update the balances of both the sender and the recipient. Determining the gas cost of `SSTORE` involves a complex [algorithm](https://github.com/wolflo/evm-opcodes/blob/main/gas.md#a7-sstore) so instead, here's a summary of the key points:
+`SSTORE` is the opcode used to modify a blockchain state. Whenever a function wants to update the contract's storage, an `SSTORE` opcode is executed. For example, the `transfer()` function in ERC20 executes two `SSTORE` operations to update the balances of both the sender and the recipient. The gas cost of `SSTORE` can be derived from this [algorithm](https://github.com/wolflo/evm-opcodes/blob/main/gas.md#a7-sstore) but for brevity, the key points are:
 
-1) An `SSTORE` operation is always preceeded by an `SLOAD` because you need to access a slot when you write to it. This implies that we must add the gas costs from the `SLOAD` operation on top of the cost of `SSTORE`.
-2) A storage update from zero to non-zero costs 20k gas.
-3) A storage update from non-zero to a different non-zero costs 2.9k gas.
-4) A storage update from non-zero to the same non-zero costs 100 gas.
-5) If the slot has been modified previously in the same transaction i.e. a dirty write, all subsequent `SSTORE` to the same slot will only cost 100 gas.
-6) A storage update from non-zero to zero will also refund the user with some gas*.
+1) A storage update from zero to a non-zero value costs 22,100 gas*.
+2) A storage update from a non-zero value to the same value costs 2,200 gas*.
+3) A storage update from a non-zero value to a different non-zero value costs 5,000 gas*.
+4) All subsequent writes to a slot which has been modified previously in the same transaction costs 100 gas.
 
-<sub>*The gas refund amount depends on a few factors, which we will address in a separate article.</sub>
+<sub>* These are only applicable to the first write to a specific storage slot.</sub>
 
-From the summary above, it is evident that the very first update to storage, also known as a clean write, is prohibitively expensive. The cost for executing `SSTORE` far surpasses the costs associated with almost every other opcode. This insight suggests a potential optimization: how can we minimize the use of `SSTORE`s?
+Based on the summary above, it is clear that the initial `SSTORE` operation to a specific slot, also known as a clean write, is prohibitively expensive. For example, setting the values of two different slots from zero to non-zero costs 44,200 gas.
 
-Let's walk through another contract to illustrate the gas costs described above.
+Let's walk through [some examples](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/SstoreCost.sol) to illustrate the gas costs described above.
 
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.22;
 
+contract ZeroToNonZero {
+    uint256 public x;
+
+    // Costs 20k + 2.1k gas
+    // 2.1k is for the cold access
+    function setX() public {
+        x = 1;
+    }
+}
+
+contract NonZeroToSameNonZero {
+    uint256 public x = 1;
+
+    // Costs 100 + 2.1k gas
+    // 2.1k is for the cold access
+    function setX() public {
+        x = 1;
+    }
+}
+
+contract NonZeroToDiffNonZero {
+    uint256 public x = 1;
+
+    // Costs 2.9k + 2.1k gas
+    // 2.1k is for the cold access
+    function setX() public {
+        x = 2;
+    }
+}
+
+contract MultipleSstores {
+    uint256 public x = 1;
+
+    // Since the compiler's optimization is turned on,
+    // it knows to skip the first 2 assignments.
+    // If you want to see the unoptimized cost
+    // i.e. 2.9k + 2.1k + 100 + 100
+    // turn off optimizations and run the command
+    // `forge debug src/SstoreCost.sol --tc "MultipleSstores" --sig "setX()"`
+    function setX() public {
+        x = 4;
+        x = 3;
+        x = 2;
+    }
+}
+```
+
+The code snippet above contains four contracts, each corresponding to one of the four summarized points. Each contract contains a slightly different `setX()` function, which is responsible for updating the storage variable `x`.
+
+Similarly, we can generate a gas report for this test using `forge test --match-contract SstoreCostTest --gas-report`. Executing this command reveals a gas cost of 22,238, 2,338, 5,138, and 5,138 respectively.
+
+As expected, setting `x` from its default value of zero to a non-zero value the most expensive. Conversely, it is the cheapest when you try to update `x` to the same value. This is considered a no-op so you only need to pay for (cold) accessing the storage slot.
+
+Astute readers may notice that the cost for the `setX()` function of the last two scenarios is identical.This is because, with optimizations enabled, the compiler is smart enough to recognize that earlier assignments in the `MultipleSstores` contract can be disregarded. If compiler optimization is disabled in the foundry.toml file, you will able to see the additional gas costs arising from the multiple assignments.
+
+As demonstrated in the examples above, the cost of executing the `SSTORE` opcode is exceedingly high, surpassing the costs of nearly every other opcode. This observation highlights a potential optimization opportunity: how can we minimize the use of `SSTORE`?
 
 ## Storage Packing
 
