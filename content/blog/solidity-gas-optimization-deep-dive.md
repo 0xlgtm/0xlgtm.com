@@ -26,6 +26,8 @@ My main criticism of these articles lies in their inclination towards breadth ra
 
 We will begin by covering the foundational knowledge necessary to grasp the techniques outlined later in this article. These techniques share a common underlying concept, making a solid groundwork crucial for a better understanding and appreciation of these strategies. Additionally, we will briefly touch upon some considerations to keep in mind when applying these optimizations.
 
+Before we begin, the code examples have been uploaded to the [deep dives repo](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/). Feel free to clone it if you wish to follow along with the code examples. We will be using Solidity compiler version 0.8.22 with optimizations enabled for 10,000 runs.
+
 # Prerequisite Knowledge
 
 ## Understanding Opcodes
@@ -37,9 +39,8 @@ If you understand the SSTORE and SLOAD opcodes and their dynamic pricing algorit
 Assume that you want to deploy the following contract:
 
 ```solidity
-// SPDX-License-Identifier: GPL-3.0
-// Source: https://remix.ethereum.org/
-pragma solidity >=0.8.2 <0.9.0;
+// https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/Storage.sol
+pragma solidity 0.8.22;
 
 contract Storage {
 
@@ -55,9 +56,9 @@ contract Storage {
 }
 ```
 
-Compiling the `Storage` contract will result in the following [runtime](https://ethereum.stackexchange.com/questions/32234/difference-between-bytecode-and-runtime-bytecode) bytecode:
+Compiling the `Storage` contract, with the command `forge inspect Storage deployedBytecode`, result in the following [runtime](https://ethereum.stackexchange.com/questions/32234/difference-between-bytecode-and-runtime-bytecode) bytecode:
 
-`6080604052348015600e575f80fd5b50600436106030575f3560e01c80632e64cec11460345780636057361d146048575b5f80fd5b5f5460405190815260200160405180910390f35b605760533660046059565b5f55565b005b5f602082840312156068575f80fd5b503591905056fea264697066735822122078bcdcb3640a135d107fd506fad0323eea506128357e97975d901550f030118e64736f6c63430008140033`
+`6080604052348015600f57600080fd5b506004361060325760003560e01c80632e64cec11460375780636057361d14604c575b600080fd5b60005460405190815260200160405180910390f35b605c6057366004605e565b600055565b005b600060208284031215606f57600080fd5b503591905056fea2646970667358221220f830518cc265c932d00bc09e305ea281ef5d24fe16cb6b04364d484451e3582164736f6c63430008160033`
 
 To the untrained eye, this paragraph might appear nonsensical. However, it contains the code for the `Storage` contract. Each pair of hexadecimal characters constitutes one byte, and each byte corresponds to an operation code, or opcode for short. For example, `60` stands for the `PUSH1` opcode and `80` is the input for `PUSH1`.
 
@@ -78,11 +79,10 @@ Notably, a cold `SLOAD` is 20 times more costly than a warm `SLOAD`. To take adv
 
 Before a transaction execution begins, an empty set called the `accessed_storage_keys` is initialized. Whenever a storage slot of a contract is accessed, the `(address, storage_key)` pair is first check against the `accessed_storage_keys` set. If it is present in the set, it is classified as a warm access. Conversely, if it is not present, it is categorized as a cold access.
 
-Let's demonstrate these two types of access with [some examples](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/ColdVsWarm.sol).
+Let's demonstrate a cold and warm access with some code examples.
 
 ```solidity
-// Compiler version 0.8.22, optimizer on with 10000 runs
-// SPDX-License-Identifier: MIT
+// https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/ColdVsWarm.sol
 pragma solidity 0.8.22;
 
 contract ColdAccess {
@@ -106,7 +106,7 @@ contract ColdAndWarmAccess {
 The code snippet above contains two contracts, namely `ColdAccess` and `ColdAndWarmAccess`. The main difference lies in the `getX()` function of the `ColdAndWarmAccess` contract, which executes two `SLOAD` calls to storage slot 0. The first `SLOAD` is considered a cold access and thus costs 2,100 gas. The second `SLOAD` is a warm access and costs 100 gas therefore, the difference in gas costs between the two `getX()` functions should be at least 100 gas.
 
 {% tip(header="Tip") %}
-The difference cannot be exactly 100 gas as additional operations are required e.g. stack management.
+The difference cannot be exactly 100 gas as additional operations are required e.g. moving things around the stack.
 {% end %}
 
 We can generate the gas report using forge tests i.e. `forge test --match-contract ColdVsWarmTest --gas-report`. Executing this command reveals a gas cost of 2,246 and 2,353 respectively. As expected, the `getX()` function of the `ColdAndWarmAccess` contract costs 107 gas more. Now that you understand how the `SLOAD` opcode works, we can proceed to untangle the most expensive and complex opcode, the `SSTORE` opcode.
@@ -124,10 +124,10 @@ We can generate the gas report using forge tests i.e. `forge test --match-contra
 
 Based on the summary above, it is clear that the initial `SSTORE` operation to a specific slot, also known as a clean write, is prohibitively expensive. For example, setting the values of two different slots from zero to non-zero costs 44,200 gas.
 
-Let's walk through [some examples](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/SstoreCost.sol) to illustrate the gas costs described above.
+Let's walk through some code examples to illustrate the key points described above.
 
 ```solidity
-// SPDX-License-Identifier: MIT
+// https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/SstoreCost.sol
 pragma solidity 0.8.22;
 
 contract ZeroToNonZero {
