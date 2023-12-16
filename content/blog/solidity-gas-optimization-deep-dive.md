@@ -190,6 +190,7 @@ As demonstrated in the examples above, the cost of executing the `SSTORE` opcode
 As explained in the [Understanding Opcodes](#understanding-opcodes) section, our focus will be on gas optimization methods that can help with minimizing the use of `SSTORE` and `SLOAD`. These techniques comprise of:
 
 - [Avoid zero values](#avoid-zero-values)
+- [Storage packing](#storage-packing)
 
 ## Avoid Zero Values
 
@@ -243,20 +244,70 @@ Upon generating the gas report, using the `forge test --match-contract AvoidZero
 
 ## Storage Packing
 
-talk about sstore and sload, warm vs cold access, dirty vs clean writes.
+Depending on your specific use case, you might not exhaust the entire range of values offered by a `uint256`. As such, you may want to consider packing multiple variables into a single storage slot.
 
-https://github.com/wolflo/evm-opcodes/blob/main/gas.md
+Assume we that have the following problem: I want to store the students' grades on a smart contract. For each student, there are four grades to be stored.
 
+```solidity
+pragma solidity 0.8.22;
 
-### Why it works
+contract StoragePacking {
+    // Naive implementation
+    // mapping from student id => grade
+    mapping(uint256 => uint256) gradeForA;
+    mapping(uint256 => uint256) public gradeForB;  // Note: public variable so we can compare gas usage for single retrieval 
+    mapping(uint256 => uint256) gradeForC;
+    mapping(uint256 => uint256) gradeForD;
 
-### Things to note
+    function recordGradesUnoptimized(uint256 id, uint256 a, uint256 b, uint256 c, uint256 d) public {
+        gradeForA[id] = a;
+        gradeForB[id] = b;
+        gradeForC[id] = c;
+        gradeForD[id] = d;
+    }
 
+    function getGradesUnoptimized(uint256 id) public view returns(uint256, uint256, uint256, uint256) {
+        return (gradeForA[id], gradeForB[id], gradeForC[id], gradeForD[id]);
+    }
 
-smart storage packing vs not so smart storage packing
+    // Optimized implementation
+    // mapping from student id => packed grades
+    mapping(uint256 => uint256) grades;
 
-# 
+    function recordGradesOptimized(uint256 id, uint256 a, uint256 b, uint256 c, uint256 d) public {
+        uint256 packedGrades = (((((a << 64) | b) << 64) | c) << 64) | d;
+        grades[id] = packedGrades;
+    }
 
+    function gradeForBOptimized(uint256 id) public view returns(uint256) {
+        return grades[id] >> 128 & type(uint64).max;
+    }
+
+    function getGradesOptimized(uint256 id) public view returns(uint256 a, uint256 b, uint256 c, uint256 d) {
+        uint256 packedGrades = grades[id];
+        a = packedGrades >> 192;
+        b = packedGrades >> 128 & type(uint64).max;
+        c = packedGrades >> 64 & type(uint64).max;
+        d = uint256(uint64(packedGrades));
+    }
+}
+```
+
+The [code example](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/StoragePacking.sol) above contains two implementation to solve the given problem.
+
+A naive implementation uses a separate mapping for each subject. However, given that the maximum value for each grade is 100, it is possible to use a single mapping to store the grades of four subjects. By employing storage packing, we can combine the grades into a single storage slot thus optimizing storage utilization.
+
+In order to achieve this consolidation, each grade is stored in adjacent 8 bytes "buckets". Although the maximum value for each bucket far exceeds 100, the design is more than sufficient to solve the given problem since we only need to store four grades per student.
+
+While using a smaller type like `uint32` to pack four variables is possible, it is less gas efficient. As per the [solidity documentation](https://docs.soliditylang.org/en/latest/internals/layout_in_storage.html#:~:text=When%20using%20elements,the%20desired%20size.), the EVM operates on 32 bytes at a time. Therefore, if the element is smaller than that, the EVM must use more operations in order to reduce the size of the element from 32 bytes to the desired size.
+
+Bitwise operators like `|`, `>>` and `<<` are used to manipulate and ensure that the buckets are aligned in adjacent positions. Bit manipulation is not an optimization specific to Solidity so you should be able to find many good resources on it on the internet. However, if you want an article explaining bit manipulation using Solidity's syntax, this is my recommended [resource](https://medium.com/@mweiss.eth/solidity-and-evm-bit-shifting-and-masking-in-assembly-yul-942f4b4ebb6a).
+
+{% tip(header="Tip") %}
+Pack related variables together so you can retrieve and set them in a single operation.
+{% end %}
+
+Similarly, we can generate the gas report using the command `forge test --match-contract StoragePackingTest --gas-report`. From the gas report, we able to notice a substantial gas savings when comparing `getGradesUnoptimized()` against `getGradesOptimized()` and `recordGradesUnoptimized()` against `recordGradesOptimized()`. The gas difference of 6,430 and 66,473 aligns with our predicted savings because the optimized functions only use a single `SSTORE` and `SLOAD` compared to four in the unoptimized functions.
 
 
 # Acknowledgements
