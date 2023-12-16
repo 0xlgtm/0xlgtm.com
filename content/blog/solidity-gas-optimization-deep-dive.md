@@ -79,10 +79,9 @@ Notably, a cold `SLOAD` is 20 times more costly than a warm `SLOAD`. To take adv
 
 Before a transaction execution begins, an empty set called the `accessed_storage_keys` is initialized. Whenever a storage slot of a contract is accessed, the `(address, storage_key)` pair is first check against the `accessed_storage_keys` set. If it is present in the set, it is classified as a warm access. Conversely, if it is not present, it is categorized as a cold access.
 
-Let's demonstrate a cold and warm access with some code examples.
+Let's demonstrate a cold and warm access with some [code examples](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/ColdVsWarm.sol).
 
 ```solidity
-// https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/ColdVsWarm.sol
 pragma solidity 0.8.22;
 
 contract ColdAccess {
@@ -124,10 +123,9 @@ We can generate the gas report using forge tests i.e. `forge test --match-contra
 
 Based on the summary above, it is clear that the initial `SSTORE` operation to a specific slot, also known as a clean write, is prohibitively expensive. For example, setting the values of two different slots from zero to non-zero costs 44,200 gas.
 
-Let's walk through some code examples to illustrate the key points described above.
+Let's walk through some [code examples](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/SstoreCost.sol) to illustrate the key points described above.
 
 ```solidity
-// https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/SstoreCost.sol
 pragma solidity 0.8.22;
 
 contract ZeroToNonZero {
@@ -200,7 +198,6 @@ As explained in the [Understanding Opcodes](#understanding-opcodes) section, our
 The reentrancy check modifier is a good candidate for implementing this optimization.
 
 ```solidity
-// https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/AvoidZeroValue.sol
 pragma solidity 0.8.22;
 
 
@@ -240,7 +237,7 @@ contract AvoidZeroValue {
 }
 ```
 
-In the provided code snippet, there are two variations of the reentrancy check modifier. The unoptimized `reentrancyCheckUnoptimized()` modifier employs a value of zero, which is the default value for `uint256`, to indicate the unentered case. On the other hand, the optimized `reentrancyCheckOptimized()` modifier utilizes a value of one.
+In the provided [code snippet](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/AvoidZeroValue.sol), there are two variations of the reentrancy check modifier. The unoptimized `reentrancyCheckUnoptimized()` modifier employs a value of zero, which is the default value for `uint256`, to indicate the unentered case. On the other hand, the optimized `reentrancyCheckOptimized()` modifier utilizes a value of one.
 
 Upon generating the gas report, using the `forge test --match-contract AvoidZeroValueTest --gas-report` command, the gas costs are revealed to be 22,021 and 8,328 respectively. As anticipated, opting for a non-zero value as the unentered case in the reentrancy check is more cost-effective, given that a non-zero to non-zero storage update is cheaper than a zero to non-zero storage update.
 
