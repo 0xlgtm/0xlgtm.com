@@ -28,9 +28,9 @@ In this article, we aim to address this gap by thoroughly exploring the most imp
 
 Before we begin, the code examples have been uploaded to the [deep dives repo](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/). Feel free to clone it if you wish to follow along with the code examples. We will be using [Foundry](https://github.com/foundry-rs/foundry) configured to Solidity compiler version 0.8.22, using the new IR codegen, with optimizations enabled for 10,000 runs.
 
-# Prerequisite Knowledge
+## Prerequisite Knowledge
 
-## Understanding Opcodes
+### Understanding Opcodes
 
 {% tip(header="Tip") %}
 If you understand the SSTORE and SLOAD opcodes and their dynamic pricing algorithm, you can skip to the [optimization](#optimizations) section.
@@ -64,9 +64,9 @@ To the untrained eye, this paragraph might appear nonsensical. However, it conta
 
 Opcodes are the basic instructions executed by the Ethereum Virtual Machine (EVM) and each opcode has a gas cost associated with it. In this article, we will focus on strategies that minimizes the use of two of the most expensive opcodes, namely `SSTORE` and `SLOAD`.
 
-## Deconstructing SLOAD
+### Deconstructing SLOAD
 
-### What is the SLOAD opcode?
+#### What is the SLOAD opcode?
 
 Given the index to some position in a contract's storage, the `SLOAD` opcode is used to retrieve the 256-bit (32 bytes) word located at that slot. For example, the ERC20 `balanceOf()` function executes one `SLOAD` operation to retrieve a user's balance. Unlike other opcodes with a fixed gas price, the `SLOAD` opcode has a (simple) dynamic pricing model as follows:
 
@@ -75,7 +75,7 @@ Given the index to some position in a contract's storage, the `SLOAD` opcode is 
 
 Notably, a cold `SLOAD` is 20 times more costly than a warm `SLOAD`. To take advantage of this, we must first understand the distinction between a cold and a warm access.
 
-### Cold Access vs. Warm Access
+#### Cold Access vs. Warm Access
 
 Before a transaction execution begins, an empty set called the `accessed_storage_keys` is initialized. Whenever a storage slot of a contract is accessed, the `(address, storage_key)` pair is first check against the `accessed_storage_keys` set. If it is present in the set, it is classified as a warm access. Conversely, if it is not present, it is categorized as a cold access.
 
@@ -110,7 +110,7 @@ The difference cannot be exactly 100 gas as additional operations are required e
 
 We can generate the gas report using forge tests i.e. `forge test --match-contract ColdVsWarmTest --gas-report`. Executing this command reveals a gas cost of 2,246 and 2,353 respectively. As expected, the `getX()` function of the `ColdAndWarmAccess` contract costs 107 gas more. Now that you understand how the `SLOAD` opcode works, we can proceed to untangle the most expensive and complex opcode, the `SSTORE` opcode.
 
-## Deciphering SSTORE
+### Deciphering SSTORE
 
 `SSTORE` is the opcode used to modify a blockchain state. Whenever a function wants to update the contract's storage, an `SSTORE` opcode is executed. For example, the `transfer()` function in ERC20 executes two `SSTORE` operations to update the balances of both the sender and the recipient. The gas cost of `SSTORE` can be derived from this [algorithm](https://github.com/wolflo/evm-opcodes/blob/main/gas.md#a7-sstore) but for brevity, the key points are:
 
@@ -185,14 +185,13 @@ Astute readers may notice that the cost for the `setX()` function of the last tw
 
 As demonstrated in the examples above, the cost of executing the `SSTORE` opcode is exceedingly high, surpassing the costs of nearly every other opcode. This observation highlights a potential optimization opportunity: how can we minimize the use of `SSTORE`?
 
-# Optimizations
+## Optimizations
 
 As explained in the [Understanding Opcodes](#understanding-opcodes) section, our focus will be on gas optimization methods that can help with minimizing the use of `SSTORE` and `SLOAD`. These techniques comprise of:
 
 - [Avoid zero values](#avoid-zero-values)
 - [Storage packing](#storage-packing)
-
-## Avoid Zero Values
+### Avoid Zero Values
 
 [In the earlier section](#deciphering-sstore), we learnt that updating storage from zero to a non-zero value costs a whopping 22,100 gas. However, this also extends to all [value types](https://docs.soliditylang.org/en/latest/types.html#value-types) and not just (un)signed integers. The "zero" value is more commonly referred to as the default value. For instance, the "zero" value for the `bool` type is `false`, and for the `address` type, it is `address(0)`.
 
@@ -242,7 +241,7 @@ In the provided [code snippet](https://github.com/0xlgtm/gas-optimization-deep-d
 
 Upon generating the gas report, using the `forge test --match-contract AvoidZeroValueTest --gas-report` command, the gas costs are revealed to be 22,021 and 8,328 respectively. As anticipated, opting for a non-zero value as the unentered case in the reentrancy check is more cost-effective, given that a non-zero to non-zero storage update is cheaper than a zero to non-zero storage update.
 
-## Storage Packing
+### Storage Packing
 
 Depending on your specific use case, you might not exhaust the entire range of values offered by a `uint256`. As such, you may want to consider packing multiple variables into a single storage slot.
 
