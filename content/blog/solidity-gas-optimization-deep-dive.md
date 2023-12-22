@@ -113,7 +113,9 @@ We can generate the gas report using the `forge test` command with the `--gas-re
 
 ### Deciphering SSTORE
 
-`SSTORE` is the opcode used to modify a blockchain state. Whenever a function wants to update the contract's storage, an `SSTORE` opcode is executed. For example, the `transfer()` function in ERC20 executes two `SSTORE` operations to update the balances of both the sender and the recipient. The gas cost of `SSTORE` can be derived from this [algorithm](https://github.com/wolflo/evm-opcodes/blob/main/gas.md#a7-sstore) but for brevity, the key points are:
+If `SLOAD` is for reading a blockchain state then `SSTORE` is the opcode used to modify a blockchain state. Whenever a function wants to update the contract's storage, an `SSTORE` opcode is executed. For example, the `transfer()` function in ERC20 executes two `SSTORE` operations to update the balances of both the sender and the recipient.
+
+The gas cost of `SSTORE` can be derived from this [algorithm](https://github.com/wolflo/evm-opcodes/blob/main/gas.md#a7-sstore) but for brevity, the key points are:
 
 1) A storage update from zero to a non-zero value costs 22,100 gas*.
 2) A storage update from a non-zero value to the same value costs 2,200 gas*.
@@ -122,9 +124,9 @@ We can generate the gas report using the `forge test` command with the `--gas-re
 
 <sub>* These are only applicable to the first write to a specific storage slot.</sub>
 
-Based on the summary above, it is clear that the initial `SSTORE` operation to a specific slot, also known as a clean write, is prohibitively expensive. For example, setting the values of two different slots from zero to non-zero costs 44,200 gas.
+Based on the summary above, it is clear that the first `SSTORE` operation to a specific slot, also known as a clean write, is prohibitively expensive. For example, setting the values of two different slots from zero to non-zero costs 44,200 gas.
 
-Let's walk through some [code examples](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/SstoreCost.sol) to illustrate the key points described above.
+Let's walk through some [code examples](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/SstoreCost.sol) to better illustrate the key points described above.
 
 ```solidity
 pragma solidity 0.8.22;
@@ -180,7 +182,7 @@ The code snippet above contains four contracts, each corresponding to one of the
 
 Similarly, we can generate a gas report for this test using `forge test --match-contract SstoreCostTest --gas-report`. Executing this command reveals a gas cost of 22,238, 2,338, 5,138, and 5,138 respectively.
 
-As expected, setting `x` from its default value of zero to a non-zero value the most expensive. Conversely, it is the cheapest when you try to update `x` to the same value. This is considered a no-op so you only need to pay for (cold) accessing the storage slot.
+As expected, setting `x` from its default value of zero to a non-zero value the most expensive. Conversely, it is the cheapest when you try to update `x` to the same value. This is considered a no-op so you only need to pay for a cold access (2,100 gas) and a non-zero to non-zero storage update (100 gas).
 
 Astute readers may notice that the cost for the `setX()` function of the last two scenarios is identical.This is because, with optimizations enabled, the compiler is smart enough to recognize that earlier assignments in the `MultipleSstores` contract can be disregarded. If compiler optimization is disabled in the foundry.toml file, you will able to see the additional gas costs arising from the multiple assignments.
 
