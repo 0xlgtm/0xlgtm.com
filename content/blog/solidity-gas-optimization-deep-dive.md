@@ -26,7 +26,7 @@ My main criticism of these articles lies in their inclination towards breadth ra
 
 In this article, we aim to address this gap by thoroughly exploring the most impactful optimizations, unraveling their intricacies to understand how and why they work. We will begin by covering the foundational knowledge necessary to grasp the techniques outlined later in this article. These techniques share a common underlying concept, making a solid groundwork crucial for a better understanding and appreciation of these strategies.
 
-If you want to follow along the code examples, feel free to clone the [deep dives repo](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/). We will be using [Foundry](https://github.com/foundry-rs/foundry) configured to Solidity compiler version 0.8.22, using the new IR codegen, with optimizations enabled for 10,000 runs.
+If you want to follow along the code examples, feel free to clone the [deep dives repo](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/). We will be using [Foundry](https://github.com/foundry-rs/foundry) configured to Solidity compiler version 0.8.22 with optimizations enabled for 10,000 runs.
 
 ## Prerequisite Knowledge
 
