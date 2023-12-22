@@ -196,16 +196,14 @@ As explained in the [Understanding Opcodes](#understanding-opcodes) section, our
 - [Storage packing](#storage-packing)
 ### Avoid Zero Values
 
-[In the earlier section](#deciphering-sstore), we learnt that updating storage from zero to a non-zero value costs a whopping 22,100 gas. However, this also extends to all [value types](https://docs.soliditylang.org/en/latest/types.html#value-types) and not just (un)signed integers. The "zero" value is more commonly referred to as the default value. For instance, the "zero" value for the `bool` type is `false`, and for the `address` type, it is `address(0)`.
+[In the previous section](#deciphering-sstore), we learnt that updating storage from zero to a non-zero value costs a whopping 22,100 gas. However, this also extends to all [value types](https://docs.soliditylang.org/en/latest/types.html#value-types) and not just (un)signed integers. The "zero" value is more commonly referred to as the default value. For instance, the "zero" value for the `bool` type is `false`, and for the `address` type, it is `address(0)`.
 
-The reentrancy check modifier is a good candidate for implementing this optimization.
+A good example for implementing this optimization is for the reentrancy check modifier.
 
 ```solidity
 pragma solidity 0.8.22;
 
-
 contract AvoidZeroValue {
-
     uint256 public x = 10;
     uint256 public statusZero;
     uint256 public statusOne = 1;
@@ -213,7 +211,7 @@ contract AvoidZeroValue {
     error Reentrancy();
 
     modifier reentrancyCheckUnoptimized() {
-        if(statusZero == 1) {
+        if (statusZero == 1) {
             revert Reentrancy();
         }
         statusZero = 1;
@@ -222,7 +220,7 @@ contract AvoidZeroValue {
     }
 
     modifier reentrancyCheckOptimized() {
-        if(statusOne == 2) {
+        if (statusOne == 2) {
             revert Reentrancy();
         }
         statusOne = 2;
@@ -240,9 +238,9 @@ contract AvoidZeroValue {
 }
 ```
 
-In the provided [code snippet](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/AvoidZeroValue.sol), there are two variations of the reentrancy check modifier. The unoptimized `reentrancyCheckUnoptimized()` modifier employs a value of zero, which is the default value for `uint256`, to indicate the unentered case. On the other hand, the optimized `reentrancyCheckOptimized()` modifier utilizes a value of one.
+In the provided [code snippet](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/AvoidZeroValue.sol), there are two variations of the reentrancy check modifier. The unoptimized `reentrancyCheckUnoptimized()` modifier uses a value of zero, which is the default value for `uint256`, to indicate the unentered case. On the other hand, the optimized `reentrancyCheckOptimized()` modifier uses a value of one.
 
-Upon generating the gas report, using the `forge test --match-contract AvoidZeroValueTest --gas-report` command, the gas costs are revealed to be 22,021 and 8,328 respectively. As anticipated, opting for a non-zero value as the unentered case in the reentrancy check is more cost-effective, given that a non-zero to non-zero storage update is cheaper than a zero to non-zero storage update.
+Generating the gas report with the `forge test --match-contract AvoidZeroValueTest --gas-report` command reveals gas costs to be 22,021 and 8,328 respectively. As we learnt previously, a non-zero to non-zero storage update is much cheaper than a zero to non-zero storage update so opting for a non-zero value as the unentered case in the reentrancy check will be more cost-effective.
 
 ### Storage Packing
 
