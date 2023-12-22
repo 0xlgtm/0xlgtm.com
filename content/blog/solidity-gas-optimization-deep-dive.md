@@ -67,12 +67,12 @@ Opcodes are the basic instructions executed by the Ethereum Virtual Machine (EVM
 
 #### What is the SLOAD opcode?
 
-Given the index to some position in a contract's storage, the `SLOAD` opcode is used to retrieve the 256-bit (32 bytes) word located at that slot. For example, the ERC20 `balanceOf()` function executes one `SLOAD` operation to retrieve a user's balance. Unlike other opcodes with a fixed gas price, the `SLOAD` opcode has a (simple) dynamic pricing model as follows:
+Given the index to some position in a contract's storage, the `SLOAD` opcode is used to retrieve the 32-bytes word located at that slot. For example, the ERC20 `balanceOf()` function executes one `SLOAD` operation to retrieve a user's balance. Unlike other opcodes with a fixed gas price, the `SLOAD` opcode has a dynamic pricing model as follows:
 
 - 2,100 gas for a cold access
 - 100 gas for a warm access
 
-Notably, a cold `SLOAD` is 20 times more costly than a warm `SLOAD`. To take advantage of this, we must first understand the distinction between a cold and a warm access.
+A cold `SLOAD` is 20 times more costly than a warm `SLOAD` so it is important to understand the distinction between a cold and a warm access if we want to take advantage of this.
 
 #### Cold Access vs. Warm Access
 
@@ -101,13 +101,15 @@ contract ColdAndWarmAccess {
 }
 ```
 
-The code snippet above contains two contracts, namely `ColdAccess` and `ColdAndWarmAccess`. The main difference lies in the `getX()` function of the `ColdAndWarmAccess` contract, which executes two `SLOAD` calls to storage slot 0. The first `SLOAD` is considered a cold access and thus costs 2,100 gas. The second `SLOAD` is a warm access and costs 100 gas therefore, the difference in gas costs between the two `getX()` functions should be at least 100 gas.
+The code snippet above contains two contracts, namely `ColdAccess` and `ColdAndWarmAccess`. The main difference lies in the `getX()` function of the `ColdAndWarmAccess` contract, which executes two `SLOAD` calls to storage slot 0.
+
+The first `SLOAD` is considered a cold access and thus costs 2,100 gas. The second `SLOAD` is a warm access and costs 100 gas therefore, the difference in gas costs between the two `getX()` functions should be at least 100 gas.
 
 {% tip(header="Tip") %}
-The difference cannot be exactly 100 gas as additional operations are required e.g. moving things around the stack.
+The difference cannot be exactly 100 gas as additional operations are required e.g. reordering the stack.
 {% end %}
 
-We can generate the gas report using forge tests i.e. `forge test --match-contract ColdVsWarmTest --gas-report`. Executing this command reveals a gas cost of 2,246 and 2,353 respectively. As expected, the `getX()` function of the `ColdAndWarmAccess` contract costs 107 gas more. Now that you understand how the `SLOAD` opcode works, we can proceed to untangle the most expensive and complex opcode, the `SSTORE` opcode.
+We can generate the gas report using the `forge test` command with the `--gas-report` flag i.e. `forge test --match-contract ColdVsWarmTest --gas-report`. Executing this command reveals a gas cost of 2,246 and 2,353 respectively. As expected, the `getX()` function of the `ColdAndWarmAccess` contract costs 107 gas more!
 
 ### Deciphering SSTORE
 
