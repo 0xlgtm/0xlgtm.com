@@ -194,6 +194,7 @@ As explained in the [Understanding Opcodes](#understanding-opcodes) section, our
 
 - [Avoid zero values](#avoid-zero-values)
 - [Storage packing](#storage-packing)
+- [Use constants or immutables for read-only variables](#constants-and-immutables)
 ### Avoid Zero Values
 
 [In the previous section](#deciphering-sstore), we learnt that updating storage from zero to a non-zero value costs a whopping 22,100 gas. However, this also extends to all [value types](https://docs.soliditylang.org/en/latest/types.html#value-types) and not just (un)signed integers. The "zero" value is more commonly referred to as the default value. For instance, the "zero" value for the `bool` type is `false`, and for the `address` type, it is `address(0)`.
@@ -311,6 +312,86 @@ Pack related variables together so you can retrieve and set them in a single ope
 
 Similarly, we can generate the gas report using the command `forge test --match-contract StoragePackingTest --gas-report`. From the gas report, we able to notice a substantial gas savings when comparing `getGradesUnoptimized()` against `getGradesOptimized()` and `recordGradesUnoptimized()` against `recordGradesOptimized()`. The gas difference of 6,430 and 66,473 aligns with our predicted savings because the optimized functions only use a single `SSTORE` and `SLOAD` compared to four in their corresponding unoptimized functions.
 
+### Constants And Immutables
+
+Another technique for reducing the number of `SLOAD` calls is to store read-only variables as constants or immutables. From the [deconstructing SLOAD](#deconstructing-sload) section, we know that an `SLOAD` opcode is executed when you want to access a storage variable. This will cost either 100 gas (warm access) or 2,100 gas (cold access). However, when a variable is declared as a constant or an immutable, it is stored in a contract's bytecode instead of storage i.e. no `SLOAD` is required to access it.
+
+```solidity
+pragma solidity 0.8.22;
+
+contract ConstantsAndImmutables {
+    uint256 constant SOME_CONSTANT = 1;
+    uint256 immutable SOME_IMMUTABLE;
+    uint256 someStorageValue = 3;
+
+    constructor() {
+        SOME_IMMUTABLE = 2;
+    }
+
+    function sumAll(uint256 _a) public view returns (uint256) {
+        unchecked {
+            return _a + SOME_CONSTANT + SOME_IMMUTABLE;
+        }
+    }
+
+    function sumAllWithStorage(uint256 _a) public view returns (uint256) {
+        unchecked {
+            return _a + someStorageValue;
+        }
+    }
+}
+
+```
+
+In the contract above, the `constant` and `immutable` keywords are used to declare a variable as a constant or immutable type. Immutable variables are more flexible than constants since they only need to be assigned a value in the constructor as opposed to when it is declared. The `sumAll()` function will be compared against the `sumAllWithStorage()` function to demonstrate the gas savings from using a constant and / or immutable instead of a storage variable.
+
+We can verify that `SLOAD` is not being used by generating the gas report for the contract above. After running the command `forge test --match-contract ConstantsAndImmutablesTest --gas-report`, we can see that the `sumAll()` function only costs 247 gas but the `sumAllWithStorage()` function costs 2,363 gas. This difference of 2,116 gas implies that the `SLOAD` opcode was not executed.
+
+{% tip(header="Tip") %}
+Another method to verify that the `SLOAD` opcode isn't executed is to trace and execute all the opcodes that are required by the `sumAll()` function.
+{% end %}
+
+To understand how this is possible, we need to take a look at the contract's bytecode which can be generated with the the `forge inspect` command. This bytecode consists of two parts; a contract creation code and a runtime code. The contract creation code is longer than usual because it also contains logic that modifies the runtime code.
+
+```markdown
+# Contract Creation Code
+60a0604052600360005534801561001557600080fd5b50600260805260805160dc61003360003960006044015260dc6000f3fe
+
+# Breakdown of Creation Code
+60a0604052       | store the free memory pointer (0xa0 instead of 0x80) to 0x40
+6003600055       | store the number 3 (used for `someStorageValue`) into storage slot 0
+34801561001557   | if callvalue is 0, jump to instruction 15 else revert.
+600080fd         | revert branch
+5b50             | instruction 15, continue execution
+6002608052       | store the number 2 (used for `SOME_IMMUTABLE`) in memory slot 0x80
+608051           | load the value in memory slot 0x80 (which is the number 2) in memory onto the stack
+60dc610033600039 | copy the runtime bytecode into memory
+600060440152     | copy 2 from the stack into the runtime bytecode ❗ 
+60dc6000f3fe     | return the updated runtime code
+
+# Runtime code before
+
+6080604052348015600f57600080fd5b506004361060325760003560e01c80631f6c63eb146037578063de90193e14607c575b600080fd5b606a6042366004608e565b7f
+0000000000000000000000000000000000000000000000000000000000000000
+0160010190565b60405190815260200160405180910390f35b606a6087366004608e565b6000540190565b600060208284031215609f57600080fd5b503591905056fea26469706673582212209f990bca0faa94aa842a9cb71241e74d984e29723d09e4e4e4cc985a48b91b0264736f6c63430008160033
+
+# Runtime code after
+
+6080604052348015600f57600080fd5b506004361060325760003560e01c80631f6c63eb146037578063de90193e14607c575b600080fd5b606a6042366004608e565b7f
+0000000000000000000000000000000000000000000000000000000000000002 <- ❗❗❗ this part is modified by the contract creation code ❗❗❗
+0160010190565b60405190815260200160405180910390f35b606a6087366004608e565b6000540190565b600060208284031215609f57600080fd5b503591905056fea26469706673582212209f990bca0faa94aa842a9cb71241e74d984e29723d09e4e4e4cc985a48b91b0264736f6c63430008160033
+```
+
+Once the contract creation code is executed, the modified runtime code will be deployed. The `0000000000000000000000000000000000000000000000000000000000000002` represents the value that was assigned to the `SOME_IMMUTABLE` variable. Constants are also replaced with a `PUSHX Y` opcodes i.e. the `SOME_CONSTANT = 1` can be represented by `6001` or `PUSH1 01`. The runtime bytecode was created with these in mind so for example, when you want to execute the `sumAll()` function, the opcodes are configured in such a way that it already knows what the values for `SOME_CONSTANT` and `SOME_IMMUTABLE`.
+
+
+
+
+
+
+
+- can you pack multiple constants together?
+- be careful when accessing immutables at construction time. https://docs.soliditylang.org/en/v0.8.23/ir-breaking-changes.html#state-variable-initialization-order
 
 # Acknowledgements
 
