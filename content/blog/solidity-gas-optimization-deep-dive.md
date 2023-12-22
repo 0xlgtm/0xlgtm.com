@@ -36,10 +36,9 @@ Before we begin, the code examples have been uploaded to the [deep dives repo](h
 If you understand the SSTORE and SLOAD opcodes and their dynamic pricing algorithm, you can skip to the [optimization](#optimizations) section.
 {% end %}
 
-Assume that you want to deploy the following contract:
+Assume that you are given the following [contract](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/Storage.sol):
 
 ```solidity
-// https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/Storage.sol
 pragma solidity 0.8.22;
 
 contract Storage {
@@ -56,11 +55,11 @@ contract Storage {
 }
 ```
 
-Compiling the `Storage` contract, with the command `forge inspect Storage deployedBytecode`, result in the following [runtime](https://ethereum.stackexchange.com/questions/32234/difference-between-bytecode-and-runtime-bytecode) bytecode:
+In order to deploy it, we must first compile it to bytecode. We can use the `forge inspect` command to generate this contract's [runtime](https://ethereum.stackexchange.com/questions/32234/difference-between-bytecode-and-runtime-bytecode) bytecode:
 
 `6080604052348015600f57600080fd5b506004361060325760003560e01c80632e64cec11460375780636057361d14604c575b600080fd5b60005460405190815260200160405180910390f35b605c6057366004605e565b600055565b005b600060208284031215606f57600080fd5b503591905056fea2646970667358221220f830518cc265c932d00bc09e305ea281ef5d24fe16cb6b04364d484451e3582164736f6c63430008160033`
 
-To the untrained eye, this paragraph might appear nonsensical. However, it contains the code for the `Storage` contract. Each pair of hexadecimal characters constitutes one byte, and each byte corresponds to an operation code, or opcode for short. For example, `60` stands for the `PUSH1` opcode and `80` is the input for `PUSH1`.
+To the untrained eye, this paragraph might appear nonsensical. However, it contains the code for the `Storage` contract. Each pair of [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal) characters constitutes one byte, and each byte corresponds to an operation code (opcode for short) or arguments to the last opcode. For example, the first two pairs of hexidecimal characters are `60` and `80`. `60` stands for the `PUSH1` opcode and `80` is the argument for `PUSH1`.
 
 Opcodes are the basic instructions executed by the Ethereum Virtual Machine (EVM) and each opcode has a gas cost associated with it. In this article, we will focus on strategies that minimizes the use of two of the most expensive opcodes, namely `SSTORE` and `SLOAD`.
 
