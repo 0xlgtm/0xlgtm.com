@@ -1,7 +1,6 @@
 +++
 title = "Solidity Gas Optimization Deep Dive"
 date = 2023-12-04
-draft = true
 
 [taxonomies]
 categories = ["solidity"]
@@ -26,15 +25,15 @@ My main criticism of these articles lies in their inclination towards breadth ra
 
 In this article, we aim to address this gap by thoroughly exploring the most impactful optimizations, unraveling their intricacies to understand how and why they work. We will begin by covering the foundational knowledge necessary to grasp the techniques outlined later in this article. These techniques share a common underlying concept, making a solid groundwork crucial for a better understanding and appreciation of these strategies.
 
-If you want to follow along the code examples, feel free to clone the [deep dives repo](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/). We will be using [Foundry](https://github.com/foundry-rs/foundry) configured to Solidity compiler version 0.8.22 with optimizations enabled for 10,000 runs.
+{% tip(header="Tip") %}
+If you want to code along, install [Foundry](https://github.com/foundry-rs/foundry) and clone the [deep dives repo](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/).
+{% end %}
 
 ## Prerequisite Knowledge
 
-### Understanding Opcodes
+If you already understand the SSTORE and SLOAD opcodes and their dynamic pricing fee, you can skip to the [optimization](#optimizations) section.
 
-{% tip(header="Tip") %}
-If you understand the SSTORE and SLOAD opcodes and their dynamic pricing algorithm, you can skip to the [optimization](#optimizations) section.
-{% end %}
+### Opcodes
 
 Assume that you are given the following [contract](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/Storage.sol):
 
@@ -42,7 +41,6 @@ Assume that you are given the following [contract](https://github.com/0xlgtm/gas
 pragma solidity 0.8.22;
 
 contract Storage {
-
     uint256 number;
 
     function store(uint256 num) public {
@@ -55,24 +53,27 @@ contract Storage {
 }
 ```
 
-In order to deploy it, we must first compile it to bytecode. We can use the `forge inspect` command to generate this contract's [runtime](https://ethereum.stackexchange.com/questions/32234/difference-between-bytecode-and-runtime-bytecode) bytecode:
+In order to deploy it, we must first compile it to bytecode. We can use the `forge inspect` command to generate the contract's [runtime](https://ethereum.stackexchange.com/questions/32234/difference-between-bytecode-and-runtime-bytecode) bytecode:
 
 `6080604052348015600f57600080fd5b506004361060325760003560e01c80632e64cec11460375780636057361d14604c575b600080fd5b60005460405190815260200160405180910390f35b605c6057366004605e565b600055565b005b600060208284031215606f57600080fd5b503591905056fea2646970667358221220f830518cc265c932d00bc09e305ea281ef5d24fe16cb6b04364d484451e3582164736f6c63430008160033`
 
-To the untrained eye, this paragraph might appear nonsensical. However, it contains the code for the `Storage` contract. Each pair of [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal) characters constitutes one byte, and each byte corresponds to an operation code (opcode for short) or arguments to the last opcode. For example, the first two pairs of hexidecimal characters are `60` and `80`. `60` stands for the `PUSH1` opcode and `80` is the argument for `PUSH1`.
+To the untrained eye, this paragraph might appear nonsensical. However, it contains the code for the `Storage` contract. Each pair of [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal) characters constitutes one byte, and each byte corresponds to either:
 
-Opcodes are the basic instructions executed by the Ethereum Virtual Machine (EVM) and each opcode has a gas cost associated with it. In this article, we will focus on strategies that minimizes the use of two of the most expensive opcodes, namely `SSTORE` and `SLOAD`.
+1. an operation code (opcode for short)
+2. arguments to be used for the most recent opcode executed
 
-### Deconstructing SLOAD
+For example, the first two pairs of hexidecimal characters are `6080`. The first byte corresponds to the `PUSH1` opcode and the second byte is a 1 byte argument to be "pushed" onto the stack.
 
-#### What is the SLOAD opcode?
+Opcodes are the basic instructions executed by the Ethereum Virtual Machine and each opcode has a gas cost associated with it. In this article, we will focus on strategies that can help to minimize the use of two of the most expensive opcodes, namely `SSTORE` and `SLOAD`.
+
+### SLOAD
 
 Given the index to some position in a contract's storage, the `SLOAD` opcode is used to retrieve the 32-bytes word located at that slot. For example, the ERC20 `balanceOf()` function executes one `SLOAD` operation to retrieve a user's balance. Unlike other opcodes with a fixed gas price, the `SLOAD` opcode has a dynamic pricing model as follows:
 
 - 2,100 gas for a cold access
 - 100 gas for a warm access
 
-A cold `SLOAD` is 20 times more costly than a warm `SLOAD` so it is important to understand the distinction between a cold and a warm access if we want to take advantage of this.
+As we can see, a cold `SLOAD` is 20 times more costly than a warm `SLOAD` so it is important to understand the distinction between a cold and a warm access if we want to take advantage of this.
 
 #### Cold Access vs. Warm Access
 
@@ -101,9 +102,9 @@ contract ColdAndWarmAccess {
 }
 ```
 
-The code snippet above contains two contracts, namely `ColdAccess` and `ColdAndWarmAccess`. The main difference lies in the `getX()` function of the `ColdAndWarmAccess` contract, which executes two `SLOAD` calls to storage slot 0.
+The code snippet above contains two almost identical contracts. The main difference lies in the `getX()` function of the `ColdAndWarmAccess` contract, which executes two `SLOAD` calls to storage slot 0.
 
-The first `SLOAD` is considered a cold access and thus costs 2,100 gas. The second `SLOAD` is a warm access and costs 100 gas therefore, the difference in gas costs between the two `getX()` functions should be at least 100 gas.
+The first `SLOAD` is always a cold access because the `(address, storage_key)` pair has yet to be added to the `accessed_storage_keys` set. Subsequent access to the same `(address, storage_key)` pair are considered a warm access. Since the function executes an additional `SLOAD`, we can expect the difference in gas costs between the two functions to be at least 100 gas.
 
 {% tip(header="Tip") %}
 The difference cannot be exactly 100 gas as additional operations are required e.g. reordering the stack.
@@ -111,7 +112,7 @@ The difference cannot be exactly 100 gas as additional operations are required e
 
 We can generate the gas report using the `forge test` command with the `--gas-report` flag i.e. `forge test --match-contract ColdVsWarmTest --gas-report`. Executing this command reveals a gas cost of 2,246 and 2,353 respectively. As expected, the `getX()` function of the `ColdAndWarmAccess` contract costs 107 gas more!
 
-### Deciphering SSTORE
+### SSTORE
 
 If `SLOAD` is for reading a blockchain state then `SSTORE` is the opcode used to modify a blockchain state. Whenever a function wants to update the contract's storage, an `SSTORE` opcode is executed. For example, the `transfer()` function in ERC20 executes two `SSTORE` operations to update the balances of both the sender and the recipient.
 
@@ -190,14 +191,14 @@ As demonstrated in the examples above, the cost of executing the `SSTORE` opcode
 
 ## Optimizations
 
-As explained in the [Understanding Opcodes](#understanding-opcodes) section, our focus will be on gas optimization methods that can help with minimizing the use of `SSTORE` and `SLOAD`. These techniques comprise of:
+As explained in the [opcodes](#opcodes) section, our focus will be on gas optimization methods that can help with minimizing the use of `SSTORE` and `SLOAD`. These techniques comprise of:
 
 - [Avoid zero values](#avoid-zero-values)
 - [Storage packing](#storage-packing)
 - [Use constants or immutables for read-only variables](#constants-and-immutables)
 ### Avoid Zero Values
 
-[In the previous section](#deciphering-sstore), we learnt that updating storage from zero to a non-zero value costs a whopping 22,100 gas. However, this also extends to all [value types](https://docs.soliditylang.org/en/latest/types.html#value-types) and not just (un)signed integers. The "zero" value is more commonly referred to as the default value. For instance, the "zero" value for the `bool` type is `false`, and for the `address` type, it is `address(0)`.
+In the previous section on [SSTORE](#sstore), we learnt that updating storage from zero to a non-zero value costs a whopping 22,100 gas. However, this also extends to all [value types](https://docs.soliditylang.org/en/latest/types.html#value-types) and not just (un)signed integers. The "zero" value is more commonly referred to as the default value. For instance, the "zero" value for the `bool` type is `false`, and for the `address` type, it is `address(0)`.
 
 A good example for implementing this optimization is for the reentrancy check modifier.
 
@@ -249,7 +250,7 @@ Depending on your specific use case, you might not exhaust the entire range of v
 
 Assume we that have the following problem:
 
-> The students recently had four different exams and the school want to store their grades on a smart contract. The maximum grade for each test is 100.
+> The students recently completed four different exams and the school want to store their grades on a smart contract. The maximum grade for each test is 100.
 
 The following [code example](https://github.com/0xlgtm/gas-optimization-deep-dive-source-code/blob/main/src/StoragePacking.sol) contains two solutions to solve this problem.
 
@@ -314,7 +315,7 @@ Similarly, we can generate the gas report using the command `forge test --match-
 
 ### Constants And Immutables
 
-Another technique for reducing the number of `SLOAD` calls is to store read-only variables as constants or immutables. From the [deconstructing SLOAD](#deconstructing-sload) section, we know that an `SLOAD` opcode is executed when you want to access a storage variable. This will cost either 100 gas (warm access) or 2,100 gas (cold access). However, when a variable is declared as a constant or an immutable, it is stored in a contract's bytecode instead of storage i.e. no `SLOAD` is required to access it.
+Another technique for reducing the number of `SLOAD` calls is to store read-only variables as constants or immutables. From the [SLOAD](#sload) section, we know that an `SLOAD` opcode is executed when you want to access a storage variable. This will cost either 100 gas (warm access) or 2,100 gas (cold access). However, when a variable is declared as a constant or an immutable, it is stored in a contract's bytecode instead of storage i.e. no `SLOAD` is required to access it.
 
 ```solidity
 pragma solidity 0.8.22;
