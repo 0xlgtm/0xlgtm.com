@@ -5,9 +5,7 @@ template = 'home.html'
 lang = 'en'
 +++
 
-Hi, my name is Simon.
-
-I am a researcher, a writer and a builder.
+Hi, my name is Simon. I am a researcher, a writer and a builder.
 
 My content revolves around web3 security and gas optimizations.
 
