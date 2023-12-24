@@ -6,3 +6,8 @@ command = "zola build"
 [build.environment]
 # Set the version name that you want to use and Netlify will automatically use it.
 ZOLA_VERSION = "0.17.0"
+
+[[headers]]
+  for = "/*" # you can configure the correct paths here
+  [headers.values]
+    access-control-allow-origin: https://giscus.app # see a list of allowed values here: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin
