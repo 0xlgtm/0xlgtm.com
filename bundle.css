@@ -31,6 +31,12 @@ h3 {
   flex-grow: 1;
 }
 
+@media screen and (max-width: 600px) {
+  .body {
+    width: 100%; /* The width is 100%, when the viewport is 800px or smaller */
+  }
+}
+
 /* You do not have to modify the following 3 classes */
 
 .full-screen {
