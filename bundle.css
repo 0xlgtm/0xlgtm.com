@@ -1,4 +1,4 @@
-body {
+/* body {
   max-width: 650px;
   margin: 40px auto;
   padding: 0 10px;
@@ -25,4 +25,33 @@ h3 {
   a:visited {
     color: #8e96f0
   }
+} */
+
+body {
+  margin: 0;
+}
+
+.full-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+.header {
+  border-bottom: 2px solid black;
+  text-align: center;
+  padding: 0.5rem;
+  background: #ddd;
+}
+
+.footer {
+  border-top: 2px solid black;
+  text-align: center;
+  padding: 0.5rem;
+  background: #ddd;
+}
+
+.body {
+  padding: 0.5rem;
+  flex-grow: 1;
 }
