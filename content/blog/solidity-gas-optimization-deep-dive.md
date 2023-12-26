@@ -198,6 +198,14 @@ Now that we have a good understanding of the `SSTORE` and `SLOAD` opcodes, we ca
 - [Avoid zero values](#avoid-zero-values)
 - [Storage packing](#storage-packing)
 - [Use constants or immutables for read-only variables](#constants-and-immutables)
+<!-- - [Prefer calldata over memory where possible](#calldata-vs-memory)
+- [Cache variables that are used multiple times](#caching)
+- [Prefer mappings over arrays](#mappings-vs-arrays)
+- [Consider avoiding storage all together](#)
+- [Keep strings less than 32 bytes](#) <- is this an mload saving or sload saving? 
+- [Consider storage pointers over memory](#) <- how does this work? test it! https://www.youtube.com/watch?v=Zi4BANKFNP8
+- [Use access lists](#) -->
+
 ### Avoid Zero Values
 
 In the previous section on [SSTORE](#sstore), we learnt that updating storage from zero to a non-zero value costs a whopping 22,100 gas. However, this also extends to all [value types](https://docs.soliditylang.org/en/latest/types.html#value-types) and not just (un)signed integers. The "zero" value is more commonly referred to as the default value. For instance, the "zero" value for the `bool` type is `false`, and for the `address` type, it is `address(0)`.
@@ -396,6 +404,68 @@ Once the contract creation code is executed, the modified runtime code will be d
 - can you pack multiple constants together?
 - be careful when accessing immutables at construction time. https://docs.soliditylang.org/en/v0.8.23/ir-breaking-changes.html#state-variable-initialization-order
 
+## Calldata vs Memory
+
+- reduces the number of mload
+- what is calldata?
+- what is memory?
+- why store in calldata?
+- how does storing in calldata differ from storing in memory? one is modifiable, one cannot be modified. also costs associated w/ accessing them.
+- why is calldata cheaper than memory? also stuff like memory expansion after 724 bytes.
+
+## Caching
+
+- What is caching? e.g. array length caching
+- Why does caching work? reduces the number of SLOAD calls. mload is cheaper than sload.
+- Why caching doesn't always work! (doesn't work for opcodes that are cheaper than mload i.e. lesser than 3 gas e.g. timestamp, chainid)
+
+## Mappings vs arrays
+
+- immediate gas savings of 2k+ per read cause no length check required
+- how much is a length check?
+- access slot directly https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Arrays.sol#L57-L68
+
+## Avoid SLOADs all together
+
+- SSTORE2 to store data in code instead of memory
+- create to write, extcodecopy to read
+- since you're using the create opcode, you can only write once. 
+- SSTORE2 vs constants
+- I guess w/ SSTORE2, you can create new constants on the fly. Constants are immutable but create is 32k gas!
+- https://github.com/Vectorized/solady/blob/main/src/utils/SSTORE2.sol
+- https://twitter.com/real_philogy/status/1677811731962245120
+
+## Storage pointers??
+
+# Extras
+
+## Unchecked math
+## Payable (admin) functions
+## Custom errors
+## short revert strings
+## strings shorter than 32 bytes
+## Batch operations
+## i++ vs ++i 
+## < and > vs != (depends on stack order)
+## structs vs arrays (skip length check)
+## 1 big require vs many small requires
+## short circuit early
+## indexing events
+## fn selector mining
+## shr, shl vs mul or div
+## gas left branching
+## data types smaller than 32 bytes
+## bytesNN over bytes
+
+
+# Conclusion
+
+instead of memorizing every possible gas optimization technique, it is better to select a handful of the most impactful strategies and really understand them so it makes it easier to recall them from memory in the future.
+
+2 more advanced gas optimization strategies are to use assembly (since you can go ham with the custom packing, usage of storage locations in anticipation of the verkle tree upgrades) and to use an even lower language like huff since the stack is exposed to you, you can 
+
 # Acknowledgements
 
 https://snappify.com/view/f9a681c7-834c-467e-b34d-5ad443a893f2
+https://gist.github.com/hrkrshnn/ee8fabd532058307229d65dcd5836ddc#use-calldata-instead-of-memory-for-function-parameters
+https://www.rareskills.io/post/gas-optimization
